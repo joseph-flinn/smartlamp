@@ -20,7 +20,7 @@ ESP8266WebServer http_rest_server(HTTP_REST_PORT);
 void init_led_resource()
 {
     led_resource.id = 0;
-    led_resource.gpio = 13;
+    led_resource.gpio = 0;
     led_resource.status = LOW;
 }
 
@@ -44,17 +44,16 @@ void get_leds() {
     //StaticJsonBuffer<200> jsonBuffer;
     //JsonObject& jsonObj = jsonBuffer.createObject();
     StaticJsonDocument<200> doc;
-    JsonObject jsonObj = doc.as<JsonObject>();
     char JSONmessageBuffer[200];
 
     if (led_resource.id == 0)
         http_rest_server.send(204);
     else {
-        jsonObj["id"] = led_resource.id;
-        jsonObj["gpio"] = led_resource.gpio;
-        jsonObj["status"] = led_resource.status;
-        serializeJsonPretty(doc, Serial);
-        //jsonObj.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+        doc["id"] = led_resource.id;
+        doc["gpio"] = led_resource.gpio;
+        doc["status"] = led_resource.status;
+        serializeJson(doc, Serial);
+        serializeJson(doc, JSONmessageBuffer);
         http_rest_server.send(200, "application/json", JSONmessageBuffer);
     }
 }
@@ -120,7 +119,7 @@ void post_put_leds() {
 void config_rest_server_routing() {
     http_rest_server.on("/", HTTP_GET, []() {
         http_rest_server.send(200, "text/html",
-            "Welcome to the ESP8266 REST Web Server");
+            "Welcome to the ESP8266 REST Web Server\n");
     });
     http_rest_server.on("/leds", HTTP_GET, get_leds);
     http_rest_server.on("/leds", HTTP_POST, post_put_leds);
