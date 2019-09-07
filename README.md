@@ -16,3 +16,5 @@ REST API:
 
 
 Note: "status" == 1 means led on
+
+PWM RGB: 1024 is off, 0 is on

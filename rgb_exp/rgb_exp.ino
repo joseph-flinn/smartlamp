@@ -8,11 +8,36 @@
 /* Generates PWM on Internal LED Pin GPIO 2 of ESP8266*/
  
 #include <ESP8266WiFi.h>
-#define LED 0
+#include <stdio.h>
+
+#define LED 13
  
 int brightness = 0;    // how bright the LED is
 int fadeAmount = 5;    // how many points to fade the LED by
+
+void PWM_demo(int led_gpio) {
+  //PWM Value varries from 0 to 1023  
+  Serial.println("10 % PWM");
+  analogWrite(led_gpio,102);
+  delay(2000);
  
+  Serial.println("20 % PWM");
+  analogWrite(led_gpio,205);
+  delay(2000);
+ 
+  Serial.println("40 % PWM");
+  analogWrite(led_gpio,410);
+  delay(2000);
+ 
+  Serial.println("70 % PWM");
+  analogWrite(led_gpio,714);
+  delay(2000);
+ 
+  Serial.println("100 % PWM");
+  analogWrite(led_gpio,1024);
+  delay(2000);
+}
+
 //=======================================================================
 //                    Power on setup
 //=======================================================================
@@ -25,27 +50,10 @@ void setup() {
 //                    Main Program Loop
 //=======================================================================
 void loop() {
-  //PWM Value varries from 0 to 1023  
-  Serial.println("10 % PWM");
-  analogWrite(LED,102);
-  delay(2000);
- 
-  Serial.println("20 % PWM");
-  analogWrite(LED,205);
-  delay(2000);
- 
-  Serial.println("40 % PWM");
-  analogWrite(LED,410);
-  delay(2000);
- 
-  Serial.println("70 % PWM");
-  analogWrite(LED,714);
-  delay(2000);
- 
-  Serial.println("100 % PWM");
-  analogWrite(LED,1024);
-  delay(2000);
- 
+  PWM_demo(RED_LED);
+  PWM_demo(GREEN_LED);
+  PWM_demo(BLUE_LED);
+    
   //Continuous Fading
   Serial.println("Fadding Started");
   while(1)

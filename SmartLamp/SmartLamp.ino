@@ -6,25 +6,17 @@
 #define WIFI_RETRY_DELAY 500
 #define MAX_WIFI_INIT_RETRY 50
 
-#define red_LED 16
+#define red_LED 0
 #define green_LED 5
 #define blue_LED 4
 
 struct Led {
-    byte id;
-    byte gpio;
-    byte status;
+    int id;
+    int red;
+    int green;
+    int blue;
+    int status;
 } led_resource;
-
-struct rgb_Led {
-    byte id;
-    byte red;
-    byte green;
-    byte blue;
-    byte brightness;
-    byte status;
-} rgb_led_resource;
-
 
 const char* wifi_ssid = "OutOfBoundsError";
 const char* wifi_passwd = "YouWillNeverGuess7";
@@ -34,15 +26,10 @@ ESP8266WebServer http_rest_server(HTTP_REST_PORT);
 void init_led_resource()
 {
     led_resource.id = 0;
-    led_resource.gpio = 0;
+    led_resource.red = 0;
+    led_resource.green = 0;
+    led_resource.blue = 0;
     led_resource.status = LOW;
-
-    rgb_led_resource.id = 0;
-    rgb_led_resource.red = 0;
-    rgb_led_resource.green = 0;
-    rgb_led_resource.blue = 0;
-    rgb_led_resource.brightness = 0;
-    rgb_led_resource.status = LOW;
 }
 
 int init_wifi() {
@@ -64,15 +51,18 @@ int init_wifi() {
 void get_leds() {
     //StaticJsonBuffer<200> jsonBuffer;
     //JsonObject& jsonObj = jsonBuffer.createObject();
-    StaticJsonDocument<200> doc;
-    char JSONmessageBuffer[200];
+    StaticJsonDocument<300> doc;
+    char JSONmessageBuffer[300];
 
     if (led_resource.id == 0)
         http_rest_server.send(204);
     else {
         doc["id"] = led_resource.id;
-        doc["gpio"] = led_resource.gpio;
+        doc["red"] = led_resource.red;
+        doc["green"] = led_resource.green;
+        doc["blue"] = led_resource.blue;
         doc["status"] = led_resource.status;
+        
         serializeJson(doc, Serial);
         serializeJson(doc, JSONmessageBuffer);
         http_rest_server.send(200, "application/json", JSONmessageBuffer);
@@ -80,19 +70,17 @@ void get_leds() {
 }
 
 void json_to_resource(StaticJsonDocument<500> &jsonBody) {
-    int id, gpio, status;
+    led_resource.id = jsonBody["id"];
+    led_resource.red = jsonBody["red"];
+    led_resource.green = jsonBody["green"];
+    led_resource.blue = jsonBody["blue"];
+    led_resource.status = jsonBody["status"];
 
-    id = jsonBody["id"];
-    gpio = jsonBody["gpio"];
-    status = jsonBody["status"];
-
-    Serial.println(id);
-    Serial.println(gpio);
-    Serial.println(status);
-
-    led_resource.id = id;
-    led_resource.gpio = gpio;
-    led_resource.status = status;
+    Serial.println(led_resource.id);
+    Serial.println(led_resource.red);
+    Serial.println(led_resource.green);
+    Serial.println(led_resource.blue);
+    Serial.println(led_resource.status);
 }
 
 void post_put_leds() {
@@ -117,7 +105,13 @@ void post_put_leds() {
                 json_to_resource(jsonBody);
                 http_rest_server.sendHeader("Location", "/leds/" + String(led_resource.id));
                 http_rest_server.send(201);
-                pinMode(led_resource.gpio, OUTPUT);
+                //pinMode(red_LED, OUTPUT);
+                //pinMode(green_LED, OUTPUT);
+                //pinMode(blue_LED, OUTPUT);
+
+                analogWrite(red_LED, led_resource.red);
+                analogWrite(green_LED, led_resource.green);
+                analogWrite(blue_LED, led_resource.blue);
             }
             else if (jsonBody["id"] == 0)
               http_rest_server.send(404);
@@ -129,7 +123,11 @@ void post_put_leds() {
                 json_to_resource(jsonBody);
                 http_rest_server.sendHeader("Location", "/leds/" + String(led_resource.id));
                 http_rest_server.send(200);
-                digitalWrite(led_resource.gpio, led_resource.status);
+
+                analogWrite(red_LED, led_resource.red);
+                analogWrite(green_LED, led_resource.green);
+                analogWrite(blue_LED, led_resource.blue);
+                //digitalWrite(led_resource.gpio, led_resource.status);
             }
             else
               http_rest_server.send(404);
