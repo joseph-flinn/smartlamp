@@ -36,4 +36,5 @@ PWM RGB: 1024 is off, 0 is on
 
 ### What's Next
 + Creating some sort of user interface to interact with the api
+  + Artificial Intelligence presence detector
 + Adding simple authentication?
