@@ -37,4 +37,6 @@ PWM RGB: 1024 is off, 0 is on
 ### What's Next
 + Creating some sort of user interface to interact with the api
   + Artificial Intelligence presence detector
+  + Thermal instead of motion because I work on a computer without moving a lot
+  + Maybe a [PIR sensor](https://makezine.com/projects/presence-lights/) or sensor array
 + Adding simple authentication?
