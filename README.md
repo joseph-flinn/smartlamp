@@ -42,4 +42,5 @@ PWM RGB: 1024 is off, 0 is on
   + Artificial Intelligence presence detector
   + Thermal instead of motion because I work on a computer without moving a lot
   + Maybe a [PIR sensor](https://makezine.com/projects/presence-lights/) or sensor array
-+ Adding simple authentication?
++ Adding simple authentication
++ Moving the source code to Micro Python?
