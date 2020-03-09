@@ -30,4 +30,4 @@ Note: "status" == 1 means led on
 PWM RGB: 1024 is off, 0 is on
 
 ### Wiki Documentation
-This README is only the barebones notes that someone needs to get the project up and running correctly and how to use it. There is a [wiki](https://gitlab.com/joseph-flinn-personal-projects/smartlamp/-/wikis/DIY-Smart-Lamp-Wiki) that will be updated with any and all thorough documentation, notes, and possible future directions.
+This README is only the barebones notes that someone needs to get the project up and running correctly and how to use it. There is the [Wiki Home Page](https://gitlab.com/joseph-flinn-personal-projects/smartlamp/-/wikis/Home) that will be updated with any and all thorough documentation, notes, and possible future directions.
