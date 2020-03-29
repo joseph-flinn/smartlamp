@@ -1,0 +1,10 @@
+session_name: 'SmartLamp'
+start_directory: ${PWD}
+windows:
+- focus: 'true'
+  layout: 61f8,105x55,0,0[105x7,0,0,0,105x47,0,8,1]
+  options: {}
+  panes:
+  - htop
+  - focus: 'true'
+  window_name: bash
