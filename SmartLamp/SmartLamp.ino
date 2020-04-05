@@ -16,6 +16,7 @@ struct Led {
     int green;
     int blue;
     int status;
+    float brightness;
 } led_resource;
 
 const char* wifi_ssid = "OutOfBoundsError";
@@ -24,18 +25,17 @@ const char* wifi_passwd = "YouWillNeverGuess7";
 ESP8266WebServer http_rest_server(HTTP_REST_PORT);
 
 /* 
-How many LED strips could one board handle. Limiting factor would be number of pins.
-I believe there needs to be 3 per LED strip: red, blue, green. This needs to 
-be confirmed though.
+This code does not support driving multiple led strips. There should be an ESP8266 board for
+each led strip.
 */
 
 void init_led_resource()
 {
-    led_resource.id = -1;
     led_resource.red = 0;
     led_resource.green = 0;
     led_resource.blue = 0;
     led_resource.status = 0;
+    led_resource.brightness = 1.0;
 }
 
 int init_wifi() {
@@ -55,13 +55,11 @@ int init_wifi() {
 }
 
 void json_to_resource(StaticJsonDocument<500> &jsonBody) {
-    led_resource.id = jsonBody["id"];
     led_resource.red = jsonBody["red"];
     led_resource.green = jsonBody["green"];
     led_resource.blue = jsonBody["blue"];
     led_resource.status = jsonBody["status"];
 
-    Serial.println(led_resource.id);
     Serial.println(led_resource.red);
     Serial.println(led_resource.green);
     Serial.println(led_resource.blue);
@@ -75,11 +73,11 @@ StaticJsonDocument<500> get_jsonBody(String post_body) {
     return jsonBody;
 }
 
-void change_led_state() {
+void update_led_state() {
     if (led_resource.status == 1) {
-        analogWrite(red_LED, led_resource.red);
-        analogWrite(green_LED, led_resource.green);
-        analogWrite(blue_LED, led_resource.blue);
+        analogWrite(red_LED, int(led_resource.red * led_resource.brightness));
+        analogWrite(green_LED, int(led_resource.green * led_resource.brightness));
+        analogWrite(blue_LED, int(led_resource.blue * led_resource.brightness));
     }
     else {
         analogWrite(red_LED, 1024);
@@ -88,101 +86,34 @@ void change_led_state() {
     }
 }
 
-void get_leds() {
-    //StaticJsonBuffer<200> jsonBuffer;
-    //JsonObject& jsonObj = jsonBuffer.createObject();
+void get_led() {
     StaticJsonDocument<300> doc;
     char JSONmessageBuffer[300];
 
-    if (led_resource.id == -1)
-        http_rest_server.send(204);
-    else {
-        doc["id"] = led_resource.id;
-        doc["red"] = led_resource.red;
-        doc["green"] = led_resource.green;
-        doc["blue"] = led_resource.blue;
-        doc["status"] = led_resource.status;
-        
-        serializeJson(doc, Serial);
-        serializeJson(doc, JSONmessageBuffer);
-        http_rest_server.send(200, "application/json", JSONmessageBuffer);
-    }
+    doc["red"] = led_resource.red;
+    doc["green"] = led_resource.green;
+    doc["blue"] = led_resource.blue;
+    doc["status"] = led_resource.status;
+    doc["brightness"] = led_resource.brightness;
+    
+    serializeJson(doc, Serial);
+    serializeJson(doc, JSONmessageBuffer);
+    http_rest_server.send(200, "application/json", JSONmessageBuffer);
 }
 
-void register_led() {
-    StaticJsonDocument<500> jsonBody;
-    DeserializationError error = deserializeJson(jsonBody, http_rest_server.arg("plain"));
-
-    if (error) {
-        http_rest_server.send(302, "text/html", "[!] Error creating LED");
-    }
-    else {
-        if ((jsonBody["id"] != NULL) && (jsonBody["id"] != led_resource.id)) {
-            led_resource.id = jsonBody["id"]; // This will need to refactored when dealing with multiple leds
-            http_rest_server.sendHeader("Location", "/leds/" + String(led_resource.id));
-            http_rest_server.send(201);
-
-            change_led_state();
-        }
-        else if (jsonBody["id"] == NULL)
-          http_rest_server.send(302, "text/html", "[!] No id specified");
-        else if (jsonBody["id"] == led_resource.id)
-          http_rest_server.send(304, "text/html", "[!] " + String(led_resource.id) + " already registered");
-        else {
-            http_rest_server.send(200, "text/html", "[+] Successfully registered LED");
-        }
-    }
-}
-
-void deregister_led() {
-    StaticJsonDocument<500> jsonBody;
-    DeserializationError error = deserializeJson(jsonBody, http_rest_server.arg("plain"));
-
-    if (error) {
-        http_rest_server.send(302, "text/html", "[!] Error message");
-    }
-    else {
-        //http_rest_server.send(200, "text/html", "[+] Successfully deregistered LED");
-        http_rest_server.send(200, "text/html", "[!!!] Not yet implemented");
-    }
-}
 
 void turn_on_led() {
-    StaticJsonDocument<500> jsonBody;
-    DeserializationError error = deserializeJson(jsonBody, http_rest_server.arg("plain"));
+    led_resource.status = 1;
+    update_led_state();
 
-    if (error) {
-        http_rest_server.send(302, "text/html", "[!] Error turning on LED");
-    }
-    else {
-        if (jsonBody["id"] == led_resource.id) {
-            led_resource.status = 1;
-            change_led_state();
-
-            http_rest_server.sendHeader("Location", "/leds/" + String(led_resource.id));
-            http_rest_server.send(200, "text/html", "[+] Successfully turned on LED");
-        }
-        else http_rest_server.send(303, "text/html", "[!] LED doesn't exist");
-    }
+    http_rest_server.send(200, "text/html", "[+] Successfully turned on LED");
 }
 
 void turn_off_led() {
-    StaticJsonDocument<500> jsonBody;
-    DeserializationError error = deserializeJson(jsonBody, http_rest_server.arg("plain"));
+    led_resource.status = 0;
+    update_led_state();
 
-    if (error) {
-        http_rest_server.send(302, "text/html", "[!] Error turning off LED");
-    }
-    else {
-        if (jsonBody["id"] == led_resource.id) {
-            led_resource.status = 0;
-            change_led_state();
-
-            http_rest_server.sendHeader("Location", "/leds/" + String(led_resource.id));
-            http_rest_server.send(200, "text/html", "[+] Successfully turned on LED");
-        }
-        else http_rest_server.send(303, "text/html", "[!] LED doesn't exist");
-    }
+    http_rest_server.send(200, "text/html", "[+] Successfully turned on LED");
 }
 
 void color_led() {
@@ -193,21 +124,17 @@ void color_led() {
         http_rest_server.send(302, "text/html", "[!] Error message");
     }
     else {
-        if (jsonBody["id"] == led_resource.id) {
-            if (jsonBody.containsKey("color")) {
-                http_rest_server.send(200, "text/html", "[!] Color names not yet supported");    
-            }
-            else if (jsonBody.containsKey("red")  && jsonBody.containsKey("green")  && jsonBody.containsKey("blue")) {
-                Serial.print("Got color checker\n");
-                led_resource.red = jsonBody["red"];
-                led_resource.blue = jsonBody["blue"];
-                led_resource.green = jsonBody["green"];
-                change_led_state();
-                http_rest_server.send(200, "text/html", "[+] Successfully changed LED color");
-            }
-            else http_rest_server.send(304, "text/html", "[!] Color missing");
+        if (jsonBody.containsKey("color")) {
+            http_rest_server.send(200, "text/html", "[!] Color names not yet supported");    
         }
-        else http_rest_server.send(303, "text/html", "[!] LED doesn't exist");
+        else if (jsonBody.containsKey("red")  && jsonBody.containsKey("green")  && jsonBody.containsKey("blue")) {
+            led_resource.red = jsonBody["red"];
+            led_resource.blue = jsonBody["blue"];
+            led_resource.green = jsonBody["green"];
+            update_led_state();
+            http_rest_server.send(200, "text/html", "[+] Successfully changed LED color");
+        }
+        else http_rest_server.send(304, "text/html", "[!] Color missing");
     }
 }
 
@@ -219,7 +146,13 @@ void brightness_led() {
         http_rest_server.send(302, "text/html", "[!] Error message");
     }
     else {
-        http_rest_server.send(200, "text/html", "[+] Successfully changed LED brightness");
+        if (jsonBody.containsKey("brightness") && jsonBody["brightness"] <= 1) {
+            led_resource.brightness = jsonBody["brightness"];
+            update_led_state();
+            http_rest_server.send(200, "text/html", "[+] Successfully changed LED brightness");
+
+        }
+        else http_rest_server.send(303, "text/thml", "[!] brightness value range: 0 to 1");
     }
 }
 
@@ -284,15 +217,13 @@ void config_rest_server_routing() {
         http_rest_server.send(200, "text/html",
             "Welcome to the ESP8266 REST Web Server\n");
     });
-    http_rest_server.on("/leds", HTTP_GET, get_leds);
-    http_rest_server.on("/register_led", HTTP_POST, register_led);
-    http_rest_server.on("/deregister_led", HTTP_POST, deregister_led);
-    http_rest_server.on("/turn_on", HTTP_POST, turn_on_led);
-    http_rest_server.on("/turn_off", HTTP_POST, turn_off_led);
+    http_rest_server.on("/leds", HTTP_GET, get_led);
+    http_rest_server.on("/turn_on", HTTP_GET, turn_on_led);
+    http_rest_server.on("/turn_off", HTTP_GET, turn_off_led);
     http_rest_server.on("/color", HTTP_POST, color_led);
     http_rest_server.on("/brightness", HTTP_POST, brightness_led);
-    http_rest_server.on("/incbright", HTTP_POST, incbright);
-    http_rest_server.on("/decbright", HTTP_POST, decbright);
+    http_rest_server.on("/incbright", HTTP_GET, incbright);
+    http_rest_server.on("/decbright", HTTP_GET, decbright);
 
     http_rest_server.on("/test", HTTP_GET, test_api_param);
     http_rest_server.on("/test", HTTP_POST, test_api_json);
